@@ -2,20 +2,31 @@ require 'rails_helper'
 
 describe ArticlesController do
   describe '#index' do
+    subject { get :index }
+
     it 'should return success response' do
-      get :index
+      subject
       expect(response).to have_http_status(:ok)
     end
 
     it 'should return proper json' do
       create_list :article, 2
-      get :index
-      json = JSON.parse(response.body)
-      json_data = json['data']
-      expect(json_data.length).to eql(2)
-      expect(json_data[0]['attributes']).to eql({"title" => "My awesome article 1",
-        "content" => "The content of my awesome article 1",
-        "slug" => "my-awesome-article-1"})
+      subject
+      Article.recent.each_with_index do |article, index|
+        expect(json_data[index]['attributes']).to eql({
+          "title" => article.title,
+          "content" => article.content,
+          "slug" => article.slug
+        })
+      end
+    end
+
+    it 'should return articles in the proper order' do
+      old_article = create :article
+      newer_article = create :article
+      subject
+      expect(json_data.first['id']).eql?(newer_article.id.to_s)
+      expect(json_data.last['id']).eql?(old_article.id.to_s)
     end
   end
 end
